@@ -1,9 +1,10 @@
 import pytest
 from src.TreeStore import TreeStore
+from src.TreeStoreWithNodes import TreeStore as TreeStoreWithNodes
 
 
-@pytest.fixture
-def tree_store_instance():
+@pytest.fixture(params=[TreeStore, TreeStoreWithNodes])
+def tree_store_instance(request):
     items = [
         {"id": 1, "parent": "root"},
         {"id": 2, "parent": 1, "type": "test"},
@@ -14,7 +15,7 @@ def tree_store_instance():
         {"id": 7, "parent": 4, "type": None},
         {"id": 8, "parent": 4, "type": None}
     ]
-    return TreeStore(items)
+    return request.param(items)
 
 
 def test_get_all(tree_store_instance):
