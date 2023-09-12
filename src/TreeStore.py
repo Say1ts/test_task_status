@@ -1,41 +1,75 @@
 from collections import defaultdict
+from typing import Dict, Union, List
 
 
 class TreeStore:
+    """
+    A class-based solution for storing and querying a tree structure.
+    This approach minimizes the number of operations and uses less memory
+    compared to an object-oriented approach.
+    """
     def __init__(self, items: list[dict]):
-        self.items = items
-        self.indexed_items = {}
-        self.indexed_parent_ids: dict[int, int] = {}
-        self.indexed_children: dict[int, list[dict]] = defaultdict(list)
-        self.__index_items()
+        self._items = items
+        self._indexed_items: Dict[int, Dict] = {}
+        self._indexed_parent_ids: Dict[int, Union[int, str]] = {}
+        self._indexed_children: Dict[Union[int, str], List[Dict]] = defaultdict(list)
+        self._index_items()
 
-    def __index_items(self):
-        for item in self.items:
-            if not item['id']:
-                raise ValueError(f'No parent for item: {item}')
-            if not item['parent']:
-                raise ValueError(f'No parent for item_id: {item["id"]}')
+    def _index_items(self):
+        """
+        Indexes the items for quick lookup. Populates the _indexed_items,
+        _indexed_parent_ids, and _indexed_children dictionaries.
+        """
+        for item in self._items:
+            if 'id' not in item:
+                raise ValueError(f'Item missing id: {item}')
+            if 'parent' not in item:
+                raise ValueError(f'Item missing parent: {item}')
 
-            self.indexed_items[item['id']] = item
-            self.indexed_parent_ids[item['id']] = item['parent']
-            self.indexed_children[item['parent']].append(item)
+            self._indexed_items[item['id']] = item
+            self._indexed_parent_ids[item['id']] = item['parent']
+            self._indexed_children[item['parent']].append(item)
 
-    def getAll(self) -> list[dict]:
-        return self.items
+    def getAll(self) -> List[Dict]:
+        """
+        Retrieve all items in their original form.
 
-    def getItem(self, id: int) -> dict:
-        return self.indexed_items[id]
+        :return: List of all items.
+        """
+        return self._items
 
-    def getChildren(self, id: int) -> list[dict]:
-        return self.indexed_children[id]
+    def getItem(self, id: int) -> Dict:
+        """
+        Retrieve an item by its ID.
 
-    def getAllParents(self, id: int or str, parents=None):
-        if not parents:
-            parents = []
-        if id != 'root':
-            current_parent = self.indexed_items.get(self.indexed_parent_ids.get(id))
-            if current_parent:
-                parents.append(current_parent)
-                self.getAllParents(current_parent['id'], parents)
+        :param id: The ID of the item to retrieve.
+        :return: The item as a dictionary, or an empty dictionary if not found.
+        """
+        return self._indexed_items.get(id, {})
+
+    def getChildren(self, id: int) -> List[Dict]:
+        """
+        Retrieve the children of an item by its ID.
+
+        :param id: The ID of the item whose children are to be retrieved.
+        :return: List of children as dictionaries, or an empty list if none found.
+        """
+        return self._indexed_children.get(id, [])
+
+    def getAllParents(self, id: Union[int, str]) -> List[Dict]:
+        """
+        Retrieve all parents of an item by its ID, up to the root.
+
+        :param id: The ID of the item whose parent chain is to be retrieved.
+        :return: List of parents as dictionaries, in order from the immediate parent to the root.
+        """
+        parents = []
+        while id != 'root':
+            id = self._indexed_parent_ids.get(id)
+            if id is None:
+                break
+            parent = self._indexed_items.get(id)
+            if parent:
+                parents.append(parent)
         return parents
 
